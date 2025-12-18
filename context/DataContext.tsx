@@ -66,32 +66,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    if (!currentUser || !db) return;
+    if (!currentUser || !db) {
+      if (!currentUser) setLoadingData(false);
+      return;
+    }
 
     setLoadingData(true);
     setFirestoreError(null);
     const userId = currentUser.uid;
 
     const handleSnapshotError = (err: any) => {
-      console.error("Firestore Error Hooked:", err);
+      console.error("Firestore Error Caught:", err);
       if (err.code === 'permission-denied') {
-        setFirestoreError("權限不足：請至 Firebase Console > Firestore Database > Rules 設定規則。建議規則：allow read, write: if request.auth != null;");
+        setFirestoreError("權限不足：請至 Firebase Console 設定 Firestore 規則（例如：allow read, write: if request.auth != null;）");
       }
       setLoadingData(false);
     };
 
+    // Accounts
     const qAccounts = query(collection(db, 'accounts'), where("userId", "==", userId));
     const unsubscribeAccounts = onSnapshot(qAccounts, (snapshot) => {
       setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BankAccount)));
-      setFirestoreError(null); // Clear error if success
+      setFirestoreError(null);
     }, handleSnapshotError);
 
+    // Transactions
     const qTransactions = query(collection(db, 'transactions'), where("userId", "==", userId));
     const unsubscribeTransactions = onSnapshot(qTransactions, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
       setTransactions(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }, handleSnapshotError);
 
+    // Stocks
     const qStocks = query(collection(db, 'stocks'), where("userId", "==", userId));
     const unsubscribeStocks = onSnapshot(qStocks, (snapshot) => {
       setStocks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockHolding)));

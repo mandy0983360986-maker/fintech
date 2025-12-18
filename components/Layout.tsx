@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Wallet, TrendingUp, Receipt, PieChart, LogOut, Menu, X, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Wallet, TrendingUp, Receipt, PieChart, LogOut, Menu, X, AlertTriangle, ChevronRight } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 interface LayoutProps {
@@ -56,34 +56,35 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
               key={item.path}
               to={item.path}
               onClick={() => setIsSidebarOpen(false)}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${
+              className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
                 isActive(item.path) 
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' 
                   : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
             >
               <item.icon size={20} />
-              <span>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
+              {isActive(item.path) && <ChevronRight size={16} />}
             </Link>
           ))}
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4 border-t border-slate-800">
+        <div className="absolute bottom-0 w-full p-4 border-t border-slate-800 bg-slate-900">
           <div className="flex items-center space-x-3 mb-4 px-2">
-            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold uppercase">
+            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold uppercase border-2 border-slate-600">
               {user?.name.charAt(0)}
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-              <p className="text-xs text-slate-500">一般會員</p>
+              <p className="text-sm font-bold text-white truncate">{user?.name}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-tighter">Verified Member</p>
             </div>
           </div>
           <button 
             onClick={onLogout}
-            className="flex items-center space-x-3 w-full px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="flex items-center space-x-3 w-full px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors group"
           >
-            <LogOut size={18} />
-            <span>登出</span>
+            <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
+            <span>登出系統</span>
           </button>
         </div>
       </aside>
@@ -91,29 +92,29 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white border-b p-4 flex items-center justify-between flex-shrink-0">
+        <header className="lg:hidden bg-white border-b p-4 flex items-center justify-between flex-shrink-0 z-10">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-white">F</div>
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-white shadow-sm">F</div>
             <span className="text-lg font-bold text-slate-900">FinAI</span>
           </div>
-          <button onClick={() => setIsSidebarOpen(true)} className="text-slate-600">
+          <button onClick={() => setIsSidebarOpen(true)} className="text-slate-600 p-1">
             <Menu size={24} />
           </button>
         </header>
 
         {/* Error Banner */}
         {firestoreError && (
-          <div className="bg-red-600 text-white p-4 flex items-start space-x-3 shadow-md z-10 flex-shrink-0">
-            <AlertTriangle className="flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-bold">資料庫連線錯誤</p>
-              <p className="opacity-90 mt-1">{firestoreError}</p>
+          <div className="bg-red-600 text-white p-3 flex items-start space-x-3 shadow-lg z-20 flex-shrink-0 animate-in slide-in-from-top duration-300">
+            <AlertTriangle className="flex-shrink-0 mt-0.5" size={20} />
+            <div className="text-xs sm:text-sm">
+              <p className="font-bold">資料庫權限警報 (Security Alert)</p>
+              <p className="opacity-90">{firestoreError}</p>
             </div>
           </div>
         )}
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-auto p-4 lg:p-8">
+        <div className="flex-1 overflow-auto p-4 lg:p-8 bg-slate-50">
           <div className="max-w-7xl mx-auto space-y-6">
             {children}
           </div>

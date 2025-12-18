@@ -2,11 +2,10 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 
-// Helper to safely get env var
+// Helper to safely get env var (Vite uses import.meta.env, but instructions require process.env)
 const getEnv = (key: string) => {
   try {
-    const val = typeof process !== 'undefined' && process.env ? process.env[key] : undefined;
-    return val;
+    return typeof process !== 'undefined' && process.env ? process.env[key] : undefined;
   } catch {
     return undefined;
   }
@@ -18,7 +17,7 @@ let db: Firestore | undefined;
 let initializationError: Error | null = null;
 
 const getFirebaseConfig = () => {
-  // Priority 1: GitHub Secrets / Environment Variables
+  // Priority 1: GitHub Secrets / Process Environment Variables
   const envConfig = {
     apiKey: getEnv('FIREBASE_API_KEY'),
     authDomain: getEnv('FIREBASE_AUTH_DOMAIN'),
@@ -28,20 +27,20 @@ const getFirebaseConfig = () => {
     appId: getEnv('FIREBASE_APP_ID')
   };
 
-  if (envConfig.apiKey) {
-    console.debug("Firebase initialized using environment variables.");
+  if (envConfig.apiKey && envConfig.projectId) {
+    console.debug("Firebase using Environment Variables.");
     return envConfig;
   }
 
-  // Priority 2: Local Storage (Manual setup fallback)
+  // Priority 2: Local Storage (Fallback for setup/debugging)
   try {
     const localConfig = localStorage.getItem('firebase_config');
     if (localConfig) {
-      console.debug("Firebase initialized using local storage config.");
+      console.debug("Firebase using Local Storage Config.");
       return JSON.parse(localConfig);
     }
   } catch (e) {
-    console.warn("Failed to parse local firebase config", e);
+    console.warn("Local config parse failed", e);
   }
 
   return null;
@@ -51,7 +50,7 @@ try {
   const config = getFirebaseConfig();
 
   if (!config || !config.apiKey) {
-    throw new Error("Firebase 設定缺失。請確保在 GitHub Secrets 設定環境變數，或點選登入頁下方的『手動配置』。");
+    throw new Error("Firebase 配置缺失。請在 GitHub Secrets 設定環境變數，或於登入頁面手動配置。");
   }
 
   if (getApps().length === 0) {
@@ -64,7 +63,7 @@ try {
   db = getFirestore(app);
 } catch (error: any) {
   initializationError = error instanceof Error ? error : new Error(String(error));
-  console.error("Firebase Initialization Error:", initializationError.message);
+  console.error("Firebase Init Error:", initializationError.message);
 }
 
 export { auth, db, initializationError };
