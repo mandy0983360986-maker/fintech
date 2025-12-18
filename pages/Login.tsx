@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { auth, initializationError } from '../services/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { AlertCircle, LogIn, RefreshCw, Info, Settings } from 'lucide-react';
+import { AlertCircle, LogIn, RefreshCw, Settings } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -29,10 +29,13 @@ const Login: React.FC = () => {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
     } catch (err: any) {
-      console.error("Auth Error:", err);
+      console.error("Auth 錯誤詳情:", err);
       const code = err.code;
-      if (code === 'auth/api-key-not-valid' || code === 'auth/invalid-api-key') {
-        setError('Firebase API Key 無效。這通常是因為環境變數未正確傳遞至前端。');
+      const message = err.message || "";
+      
+      // 捕捉 API Key 無效的特定錯誤（包含 SDK 內部訊息）
+      if (code?.includes('api-key-not-valid') || message.toLowerCase().includes('api-key')) {
+        setError('Firebase API Key 無效。請檢查 GitHub Secrets 或 .env 配置，並確認 Vite 建置時已成功注入。');
       } else if (code === 'auth/email-already-in-use') {
         setError('此 Email 已被註冊，請直接登入。');
       } else if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
@@ -45,7 +48,8 @@ const Login: React.FC = () => {
     }
   };
 
-  const isConfigIssue = error.includes('API Key') || !!initializationError;
+  // 判定是否為環境配置問題
+  const isConfigIssue = error.toLowerCase().includes('api-key') || !!initializationError;
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -57,36 +61,28 @@ const Login: React.FC = () => {
         </div>
 
         {isConfigIssue && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm animate-pulse">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">
             <div className="flex items-start">
               <Settings size={18} className="mr-2 mt-0.5 flex-shrink-0 text-red-600" />
               <div>
-                <p className="font-bold text-red-700">環境變數缺失或錯誤</p>
-                <p className="mt-1 opacity-90">
-                  系統偵測到 Firebase 配置錯誤。請在 GitHub Repo 的 <strong>Settings > Secrets > Actions</strong> 中確認 
-                  <code className="bg-red-100 px-1 rounded">FIREBASE_API_KEY</code> 等變數已正確填寫。
+                <p className="font-bold text-red-700">環境變數缺失或錯誤 (Config Issue)</p>
+                <p className="mt-1 opacity-90 leading-relaxed">
+                  系統偵測到 Firebase 配置無效。如果您正在 GitHub Pages 使用：
                 </p>
+                <ul className="list-disc ml-4 mt-2 space-y-1 opacity-80">
+                  <li>確認 GitHub 儲存庫 <strong>Settings > Secrets > Actions</strong> 中已加入所有 <code className="bg-red-100 px-1">FIREBASE_*</code> 變數。</li>
+                  <li>設定完 Secrets 後，必須重新執行 GitHub Action 編譯程式碼。</li>
+                </ul>
               </div>
             </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && !error.includes('API Key') && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
-              <div className="flex items-start mb-2">
-                <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-              {error.includes("已被註冊") && (
-                <button 
-                  type="button" 
-                  onClick={() => { setIsRegister(false); setError(''); }} 
-                  className="w-full py-2 mt-2 bg-blue-600 text-white rounded-lg font-bold flex items-center justify-center hover:bg-blue-700 transition"
-                >
-                  <LogIn size={14} className="mr-2" /> 改用登入模式
-                </button>
-              )}
+          {error && !isConfigIssue && (
+            <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm flex items-start">
+              <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
           
@@ -99,7 +95,7 @@ const Login: React.FC = () => {
                   placeholder="您的姓名" 
                   value={name} 
                   onChange={e => setName(e.target.value)} 
-                  className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                  className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
                   required={isRegister}
                 />
               </div>
@@ -111,7 +107,7 @@ const Login: React.FC = () => {
                 placeholder="example@mail.com" 
                 value={email} 
                 onChange={e => setEmail(e.target.value)} 
-                className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
                 required 
               />
             </div>
@@ -122,7 +118,7 @@ const Login: React.FC = () => {
                 placeholder="••••••••" 
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
-                className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
                 required 
               />
             </div>
@@ -130,7 +126,7 @@ const Login: React.FC = () => {
             <button 
               type="submit" 
               disabled={loading || isConfigIssue} 
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center shadow-lg shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center shadow-lg shadow-blue-500/30 disabled:opacity-50"
             >
               {loading ? <RefreshCw className="animate-spin" size={20} /> : (isRegister ? '立即註冊' : '登入系統')}
             </button>
@@ -142,7 +138,7 @@ const Login: React.FC = () => {
             {isRegister ? '已經有帳號了？' : '還沒有帳號嗎？'}
             <button 
               onClick={() => { setIsRegister(!isRegister); setError(''); }} 
-              className="text-blue-600 font-bold ml-1 hover:underline transition-all"
+              className="text-blue-600 font-bold ml-1 hover:underline"
               disabled={isConfigIssue}
             >
               {isRegister ? '點此登入' : '立即註冊'}

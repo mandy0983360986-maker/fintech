@@ -2,7 +2,7 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 
-// 由 Vite 在建置時靜態替換
+// 這些變數由 Vite 在建置時透過 define 功能進行靜態替換
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -21,10 +21,11 @@ let initializationError: Error | null = null;
 try {
   const key = firebaseConfig.apiKey;
   
-  // 嚴格檢查環境變數是否成功注入且非佔位符
+  // 嚴格校驗：如果 Key 缺失或為字串 "undefined"，代表 Vite 環境變數注入失敗
   if (!key || key.trim() === '' || key === 'undefined' || key.includes('YOUR_')) {
-    const errorMsg = "FIREBASE_API_KEY 未正確設定。這通常是因為 index.html 中的 importmap 干擾了 Vite 的編譯流程，或是 GitHub Secrets 尚未設定。請確保 Secrets 已加入並重新執行 Action。";
-    throw new Error(errorMsg);
+    throw new Error(
+      "Firebase 配置無效：FIREBASE_API_KEY 未設定。請確保 GitHub Secrets (Settings > Secrets > Actions) 已正確加入對應變數並重新建置。"
+    );
   }
 
   if (getApps().length === 0) {
@@ -35,11 +36,12 @@ try {
   
   auth = getAuth(app);
   db = getFirestore(app);
-  console.log("Firebase 服務初始化成功。");
+  console.log("Firebase 核心服務已啟動。");
 } catch (error: any) {
   initializationError = error instanceof Error ? error : new Error(String(error));
-  console.error("Firebase 初始化失敗:", initializationError.message);
+  console.error("Firebase 初始化失敗偵測:", initializationError.message);
   
+  // 確保即使失敗，後續代碼也不會因為呼叫 undefined 的方法而崩潰
   auth = undefined;
   db = undefined;
 }
