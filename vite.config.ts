@@ -1,33 +1,31 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
-  plugins: [react()],
-  base: './', // 關鍵：確保 GitHub Pages 資源路徑正確
-  define: {
-    // 透過 define 在建置時注入環境變數
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
-    'process.env.FIREBASE_API_KEY': JSON.stringify(process.env.FIREBASE_API_KEY || ''),
-    'process.env.FIREBASE_AUTH_DOMAIN': JSON.stringify(process.env.FIREBASE_AUTH_DOMAIN || ''),
-    'process.env.FIREBASE_PROJECT_ID': JSON.stringify(process.env.FIREBASE_PROJECT_ID || ''),
-    'process.env.FIREBASE_STORAGE_BUCKET': JSON.stringify(process.env.FIREBASE_STORAGE_BUCKET || ''),
-    'process.env.FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(process.env.FIREBASE_MESSAGING_SENDER_ID || ''),
-    'process.env.FIREBASE_APP_ID': JSON.stringify(process.env.FIREBASE_APP_ID || ''),
-  },
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // 正式環境移除 console.log
-        drop_debugger: true,
-      },
+export default defineConfig(({ mode }) => {
+  // 載入所有環境變數 (包含系統環境變數與 .env)
+  const env = loadEnv(mode, process.cwd(), '');
+  
+  return {
+    plugins: [react()],
+    base: './',
+    define: {
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
+      'process.env.FIREBASE_API_KEY': JSON.stringify(env.FIREBASE_API_KEY || ''),
+      'process.env.FIREBASE_AUTH_DOMAIN': JSON.stringify(env.FIREBASE_AUTH_DOMAIN || ''),
+      'process.env.FIREBASE_PROJECT_ID': JSON.stringify(env.FIREBASE_PROJECT_ID || ''),
+      'process.env.FIREBASE_STORAGE_BUCKET': JSON.stringify(env.FIREBASE_STORAGE_BUCKET || ''),
+      'process.env.FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(env.FIREBASE_MESSAGING_SENDER_ID || ''),
+      'process.env.FIREBASE_APP_ID': JSON.stringify(env.FIREBASE_APP_ID || ''),
     },
-    rollupOptions: {
-      input: {
-        main: 'index.html'
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      minify: 'terser',
+      rollupOptions: {
+        input: {
+          main: 'index.html'
+        }
       }
     }
-  }
+  };
 });
