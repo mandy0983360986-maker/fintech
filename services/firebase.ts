@@ -9,7 +9,8 @@ const firebaseConfig = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID
 };
 
 let app: FirebaseApp | undefined;
@@ -20,11 +21,10 @@ let initializationError: Error | null = null;
 try {
   const key = firebaseConfig.apiKey;
   
-  // 嚴格檢查環境變數是否成功注入
+  // 嚴格檢查環境變數是否成功注入且非佔位符
   if (!key || key.trim() === '' || key === 'undefined' || key.includes('YOUR_')) {
-    throw new Error(
-      "FIREBASE_API_KEY 未正確設定。若這是佈署環境，請確認 GitHub Repo > Settings > Secrets > Actions 中已加入所有 FIREBASE_* 變數。"
-    );
+    const errorMsg = "FIREBASE_API_KEY 未正確設定。這通常是因為 index.html 中的 importmap 干擾了 Vite 的編譯流程，或是 GitHub Secrets 尚未設定。請確保 Secrets 已加入並重新執行 Action。";
+    throw new Error(errorMsg);
   }
 
   if (getApps().length === 0) {
@@ -35,7 +35,7 @@ try {
   
   auth = getAuth(app);
   db = getFirestore(app);
-  console.log("Firebase 服務已準備就緒");
+  console.log("Firebase 服務初始化成功。");
 } catch (error: any) {
   initializationError = error instanceof Error ? error : new Error(String(error));
   console.error("Firebase 初始化失敗:", initializationError.message);

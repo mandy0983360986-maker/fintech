@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-  // 載入所有環境變數 (包含系統環境變數與 .env)
+  // 載入所有環境變數 (支援 .env 檔案與系統環境變數)
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
@@ -16,11 +16,18 @@ export default defineConfig(({ mode }) => {
       'process.env.FIREBASE_STORAGE_BUCKET': JSON.stringify(env.FIREBASE_STORAGE_BUCKET || ''),
       'process.env.FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(env.FIREBASE_MESSAGING_SENDER_ID || ''),
       'process.env.FIREBASE_APP_ID': JSON.stringify(env.FIREBASE_APP_ID || ''),
+      'process.env.FIREBASE_MEASUREMENT_ID': JSON.stringify(env.FIREBASE_MEASUREMENT_ID || ''),
     },
     build: {
       outDir: 'dist',
       emptyOutDir: true,
       minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: false, // 保留日誌以利除錯
+          drop_debugger: true,
+        },
+      },
       rollupOptions: {
         input: {
           main: 'index.html'
