@@ -2,6 +2,7 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 
+// 這些變數由 Vite 的 define 功能在建置時注入
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -17,9 +18,10 @@ let db: Firestore | undefined;
 let initializationError: Error | null = null;
 
 try {
-  // 嚴格檢查 API Key 是否存在，避免執行時崩潰
-  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === '') {
-    throw new Error("Missing Firebase API Key. Please configure GitHub Secrets.");
+  // 檢查 API Key 是否為無效的佔位符或空字串
+  const key = firebaseConfig.apiKey;
+  if (!key || key === '' || key === 'undefined' || key.includes('YOUR_')) {
+    throw new Error("Firebase API Key 無效或未設定。請確保您已在 GitHub Secrets 或環境變數中設定 FIREBASE_API_KEY。");
   }
 
   if (getApps().length === 0) {
@@ -30,12 +32,11 @@ try {
   
   auth = getAuth(app);
   db = getFirestore(app);
-  console.log("Firebase initialized in cloud mode.");
+  console.log("Firebase 雲端模式初始化成功。");
 } catch (error: any) {
   initializationError = error instanceof Error ? error : new Error(String(error));
-  console.warn("Firebase running in offline/demo mode:", initializationError.message);
+  console.error("Firebase 初始化失敗:", initializationError.message);
   
-  // 保持為 undefined，UI 層會據此判斷是否顯示警報
   auth = undefined;
   db = undefined;
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { auth, initializationError } from '../services/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { AlertCircle, LogIn, RefreshCw, Info } from 'lucide-react';
+import { AlertCircle, LogIn, RefreshCw, Info, Settings } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -16,7 +16,7 @@ const Login: React.FC = () => {
     setError('');
     
     if (!auth) {
-      setError(initializationError?.message || 'Firebase 服務未正確初始化，請檢查環境變數配置。');
+      setError(initializationError?.message || 'Firebase 服務未正確初始化。');
       return;
     }
 
@@ -31,12 +31,12 @@ const Login: React.FC = () => {
     } catch (err: any) {
       console.error("Auth Error:", err);
       const code = err.code;
-      if (code === 'auth/email-already-in-use') {
+      if (code === 'auth/api-key-not-valid' || code === 'auth/invalid-api-key') {
+        setError('Firebase API Key 無效。這通常是因為環境變數未正確傳遞至前端。');
+      } else if (code === 'auth/email-already-in-use') {
         setError('此 Email 已被註冊，請直接登入。');
       } else if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
         setError('帳號或密碼錯誤。');
-      } else if (code === 'auth/operation-not-allowed') {
-        setError('Email 登入功能未在 Firebase Console 中啟用。');
       } else {
         setError(`操作失敗: ${err.message}`);
       }
@@ -44,6 +44,8 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const isConfigIssue = error.includes('API Key') || !!initializationError;
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -54,20 +56,23 @@ const Login: React.FC = () => {
           <p className="text-slate-500 mt-1">您的個人化金融管理助手</p>
         </div>
 
-        {initializationError && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+        {isConfigIssue && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm animate-pulse">
             <div className="flex items-start">
-              <Info size={16} className="mr-2 mt-0.5 flex-shrink-0" />
+              <Settings size={18} className="mr-2 mt-0.5 flex-shrink-0 text-red-600" />
               <div>
-                <p className="font-bold">系統提示</p>
-                <p>Firebase 環境變數可能尚未設定，系統將嘗試以預設模式運行。如果無法登入，請確認專案的環境變數配置。</p>
+                <p className="font-bold text-red-700">環境變數缺失或錯誤</p>
+                <p className="mt-1 opacity-90">
+                  系統偵測到 Firebase 配置錯誤。請在 GitHub Repo 的 <strong>Settings > Secrets > Actions</strong> 中確認 
+                  <code className="bg-red-100 px-1 rounded">FIREBASE_API_KEY</code> 等變數已正確填寫。
+                </p>
               </div>
             </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
+          {error && !error.includes('API Key') && (
             <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
               <div className="flex items-start mb-2">
                 <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
@@ -85,49 +90,51 @@ const Login: React.FC = () => {
             </div>
           )}
           
-          {isRegister && (
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">姓名</label>
+          <div className={`${isConfigIssue ? 'opacity-50 pointer-events-none' : ''}`}>
+            {isRegister && (
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">姓名</label>
+                <input 
+                  type="text" 
+                  placeholder="您的姓名" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                  required={isRegister}
+                />
+              </div>
+            )}
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Email</label>
               <input 
-                type="text" 
-                placeholder="您的姓名" 
-                value={name} 
-                onChange={e => setName(e.target.value)} 
+                type="email" 
+                placeholder="example@mail.com" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
                 className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
                 required 
               />
             </div>
-          )}
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Email</label>
-            <input 
-              type="email" 
-              placeholder="example@mail.com" 
-              value={email} 
-              onChange={e => setEmail(e.target.value)} 
-              className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
-              required 
-            />
+            <div className="mb-6">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">密碼</label>
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                required 
+              />
+            </div>
+            
+            <button 
+              type="submit" 
+              disabled={loading || isConfigIssue} 
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center shadow-lg shadow-blue-500/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? <RefreshCw className="animate-spin" size={20} /> : (isRegister ? '立即註冊' : '登入系統')}
+            </button>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">密碼</label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
-              value={password} 
-              onChange={e => setPassword(e.target.value)} 
-              className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
-              required 
-            />
-          </div>
-          
-          <button 
-            type="submit" 
-            disabled={loading} 
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center shadow-lg shadow-blue-500/30 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {loading ? <RefreshCw className="animate-spin" size={20} /> : (isRegister ? '立即註冊' : '登入系統')}
-          </button>
         </form>
 
         <div className="mt-8 pt-6 border-t border-slate-100 text-center">
@@ -136,6 +143,7 @@ const Login: React.FC = () => {
             <button 
               onClick={() => { setIsRegister(!isRegister); setError(''); }} 
               className="text-blue-600 font-bold ml-1 hover:underline transition-all"
+              disabled={isConfigIssue}
             >
               {isRegister ? '點此登入' : '立即註冊'}
             </button>
