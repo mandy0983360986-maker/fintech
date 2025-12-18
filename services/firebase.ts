@@ -5,7 +5,8 @@ import { getFirestore, Firestore } from "firebase/firestore";
 // Helper to safely get env var
 const getEnv = (key: string) => {
   try {
-    return typeof process !== 'undefined' && process.env ? process.env[key] : undefined;
+    const val = typeof process !== 'undefined' && process.env ? process.env[key] : undefined;
+    return val;
   } catch {
     return undefined;
   }
@@ -18,7 +19,6 @@ let initializationError: Error | null = null;
 
 const getFirebaseConfig = () => {
   // Priority 1: GitHub Secrets / Environment Variables
-  // Note: Standard Firebase env naming conventions
   const envConfig = {
     apiKey: getEnv('FIREBASE_API_KEY'),
     authDomain: getEnv('FIREBASE_AUTH_DOMAIN'),
@@ -28,12 +28,18 @@ const getFirebaseConfig = () => {
     appId: getEnv('FIREBASE_APP_ID')
   };
 
-  if (envConfig.apiKey) return envConfig;
+  if (envConfig.apiKey) {
+    console.debug("Firebase initialized using environment variables.");
+    return envConfig;
+  }
 
-  // Priority 2: Local Storage (Fallback for setup stage)
+  // Priority 2: Local Storage (Manual setup fallback)
   try {
     const localConfig = localStorage.getItem('firebase_config');
-    if (localConfig) return JSON.parse(localConfig);
+    if (localConfig) {
+      console.debug("Firebase initialized using local storage config.");
+      return JSON.parse(localConfig);
+    }
   } catch (e) {
     console.warn("Failed to parse local firebase config", e);
   }
@@ -45,7 +51,7 @@ try {
   const config = getFirebaseConfig();
 
   if (!config || !config.apiKey) {
-    throw new Error("Firebase 設定缺失。請在 GitHub Secrets 設定環境變數或於登入頁設定。");
+    throw new Error("Firebase 設定缺失。請確保在 GitHub Secrets 設定環境變數，或點選登入頁下方的『手動配置』。");
   }
 
   if (getApps().length === 0) {
@@ -58,7 +64,7 @@ try {
   db = getFirestore(app);
 } catch (error: any) {
   initializationError = error instanceof Error ? error : new Error(String(error));
-  console.error("Firebase Initialization Error:", error.message);
+  console.error("Firebase Initialization Error:", initializationError.message);
 }
 
 export { auth, db, initializationError };

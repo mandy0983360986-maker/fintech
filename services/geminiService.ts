@@ -24,17 +24,14 @@ export const fetchStockPrices = async (stocks: StockHolding[]): Promise<StockPri
 
   const symbols = stocks.map(s => s.symbol).join(', ');
   
-  // Using Gemini to "fetch" (simulate/retrieve based on training data) current prices
-  // In a real production app, this would call a stock market API.
-  // Here we use Gemini 2.5 Flash for speed.
   const prompt = `Provide the approximate current market price for the following stock symbols: ${symbols}. 
   Return the data as a JSON array of objects with 'symbol' and 'price' (number) properties. 
-  If you don't have exact real-time data, provide a realistic estimate based on the most recent trading data you have knowledge of.
+  If you don't have exact real-time data, provide a realistic estimate based on recent trends.
   Output ONLY the JSON.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -67,7 +64,7 @@ export const getFinancialAdvice = async (summary: string): Promise<string> => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: `Based on this financial summary, give a short, encouraging paragraph of financial advice (in Traditional Chinese): ${summary}`,
     });
     return response.text || "目前無法提供建議。";

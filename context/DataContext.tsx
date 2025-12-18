@@ -73,9 +73,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const userId = currentUser.uid;
 
     const handleSnapshotError = (err: any) => {
-      console.error("Firestore Error:", err);
+      console.error("Firestore Error Hooked:", err);
       if (err.code === 'permission-denied') {
-        setFirestoreError("權限不足：請至 Firebase Console 更新 Firestore 規則為：allow read, write: if request.auth != null;");
+        setFirestoreError("權限不足：請至 Firebase Console > Firestore Database > Rules 設定規則。建議規則：allow read, write: if request.auth != null;");
       }
       setLoadingData(false);
     };
@@ -83,7 +83,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const qAccounts = query(collection(db, 'accounts'), where("userId", "==", userId));
     const unsubscribeAccounts = onSnapshot(qAccounts, (snapshot) => {
       setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BankAccount)));
-      setFirestoreError(null);
+      setFirestoreError(null); // Clear error if success
     }, handleSnapshotError);
 
     const qTransactions = query(collection(db, 'transactions'), where("userId", "==", userId));
