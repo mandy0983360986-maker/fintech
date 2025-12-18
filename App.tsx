@@ -13,17 +13,20 @@ import { auth } from './services/firebase';
 const AppRoutes: React.FC = () => {
   const { currentUser, loadingData } = useData();
 
+  // 加載中畫面
   if (loadingData && !currentUser) {
-    // Show a simple loading screen while checking auth status
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-slate-400 text-sm font-medium">系統初始化中...</p>
+        </div>
       </div>
     );
   }
 
   const handleLogout = () => {
-    auth.signOut();
+    if (auth) auth.signOut();
   };
 
   const userDisplay = currentUser ? {

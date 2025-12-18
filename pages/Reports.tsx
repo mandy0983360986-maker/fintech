@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { getFinancialAdvice } from '../services/geminiService';
@@ -28,10 +29,7 @@ const Reports: React.FC = () => {
   }, [transactions]);
 
   const handleGetAdvice = async () => {
-    if (!process.env.API_KEY) {
-      alert("請先設定 API KEY 環境變數");
-      return;
-    }
+    // Guideline: Assume API_KEY is handled externally. Do not check or alert.
     setLoadingAdvice(true);
     
     const totalAssets = accounts.reduce((sum, a) => sum + a.balance, 0);

@@ -1,18 +1,15 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { StockHolding, StockPriceUpdate } from "../types";
 
-const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === "") {
-    console.warn("Gemini API Key is missing. Using fallback response.");
-    return null;
-  }
-  return new GoogleGenAI({ apiKey });
-};
+// Always use process.env.API_KEY directly as per guidelines.
+// Removed global getAiClient to ensure fresh instances with the correct key.
 
 export const fetchStockPrices = async (stocks: StockHolding[]): Promise<StockPriceUpdate[]> => {
-  const ai = getAiClient();
-  if (!ai) return [];
+  if (stocks.length === 0) return [];
+  
+  // Initialize right before the API call using the mandatory process.env.API_KEY
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const symbols = stocks.map(s => s.symbol).join(', ');
   
@@ -22,7 +19,7 @@ export const fetchStockPrices = async (stocks: StockHolding[]): Promise<StockPri
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // 升級為更強大的模型
+      model: 'gemini-3-pro-preview', // Selection for complex data extraction tasks
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -39,10 +36,11 @@ export const fetchStockPrices = async (stocks: StockHolding[]): Promise<StockPri
       }
     });
 
+    // Directly access the .text property from GenerateContentResponse
     const text = response.text;
     if (!text) return [];
     
-    return JSON.parse(text) as StockPriceUpdate[];
+    return JSON.parse(text.trim()) as StockPriceUpdate[];
   } catch (error) {
     console.error("Gemini failed to fetch prices:", error);
     return [];
@@ -50,14 +48,15 @@ export const fetchStockPrices = async (stocks: StockHolding[]): Promise<StockPri
 };
 
 export const getFinancialAdvice = async (summary: string): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) return "AI 顧問目前處於離線狀態，請檢查 API Key 設定。";
+  // Initialize right before the API call using the mandatory process.env.API_KEY
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // 升級為更強大的模型
+      model: 'gemini-3-pro-preview', // Selection for advanced reasoning tasks
       contents: `身為一位資深財務顧問，請根據以下財務狀況摘要，提供一段專業且具備洞察力的理財建議（請使用繁體中文）： ${summary}`,
     });
+    // Use the .text property to extract the result string
     return response.text || "目前無法產生建議。";
   } catch (error) {
     console.error("AI Advice Error:", error);
