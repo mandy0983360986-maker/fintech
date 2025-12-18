@@ -1,18 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { StockHolding, StockPriceUpdate } from "../types";
 
-const getEnv = (key: string) => {
-  try {
-    return typeof process !== 'undefined' && process.env ? process.env[key] : undefined;
-  } catch {
-    return undefined;
-  }
-};
-
 const getAiClient = () => {
-  const apiKey = getEnv('API_KEY');
-  if (!apiKey) {
-    console.warn("Gemini API Key is missing.");
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey === "") {
+    console.warn("Gemini API Key is missing. Using fallback response.");
     return null;
   }
   return new GoogleGenAI({ apiKey });
@@ -26,12 +18,11 @@ export const fetchStockPrices = async (stocks: StockHolding[]): Promise<StockPri
   
   const prompt = `Provide the approximate current market price for the following stock symbols: ${symbols}. 
   Return the data as a JSON array of objects with 'symbol' and 'price' (number) properties. 
-  If you don't have exact real-time data, provide a realistic estimate based on recent trends.
   Output ONLY the JSON.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview', // 升級為更強大的模型
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -53,23 +44,23 @@ export const fetchStockPrices = async (stocks: StockHolding[]): Promise<StockPri
     
     return JSON.parse(text) as StockPriceUpdate[];
   } catch (error) {
-    console.error("Failed to fetch stock prices via Gemini:", error);
+    console.error("Gemini failed to fetch prices:", error);
     return [];
   }
 };
 
 export const getFinancialAdvice = async (summary: string): Promise<string> => {
   const ai = getAiClient();
-  if (!ai) return "無法連接到 AI 服務。";
+  if (!ai) return "AI 顧問目前處於離線狀態，請檢查 API Key 設定。";
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Based on this financial summary, give a short, encouraging paragraph of financial advice (in Traditional Chinese): ${summary}`,
+      model: 'gemini-3-pro-preview', // 升級為更強大的模型
+      contents: `身為一位資深財務顧問，請根據以下財務狀況摘要，提供一段專業且具備洞察力的理財建議（請使用繁體中文）： ${summary}`,
     });
-    return response.text || "目前無法提供建議。";
+    return response.text || "目前無法產生建議。";
   } catch (error) {
-    console.error("Error getting advice:", error);
-    return "分析服務暫時不可用。";
+    console.error("AI Advice Error:", error);
+    return "分析服務暫時不可用，請稍後再試。";
   }
 };

@@ -58,7 +58,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAccounts([]);
         setTransactions([]);
         setStocks([]);
-        setFirestoreError(null);
         setLoadingData(false);
       }
     });
@@ -66,38 +65,34 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   useEffect(() => {
+    // 只有在 User 登入且 DB 已初始化時才監聽數據
     if (!currentUser || !db) {
       if (!currentUser) setLoadingData(false);
       return;
     }
 
     setLoadingData(true);
-    setFirestoreError(null);
     const userId = currentUser.uid;
 
     const handleSnapshotError = (err: any) => {
-      console.error("Firestore Error Caught:", err);
+      console.error("Firestore Snapshot Error:", err);
       if (err.code === 'permission-denied') {
-        setFirestoreError("權限不足：請至 Firebase Console 設定 Firestore 規則（例如：allow read, write: if request.auth != null;）");
+        setFirestoreError("權限不足：請檢查 Firestore Security Rules。");
       }
       setLoadingData(false);
     };
 
-    // Accounts
     const qAccounts = query(collection(db, 'accounts'), where("userId", "==", userId));
     const unsubscribeAccounts = onSnapshot(qAccounts, (snapshot) => {
       setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BankAccount)));
-      setFirestoreError(null);
     }, handleSnapshotError);
 
-    // Transactions
     const qTransactions = query(collection(db, 'transactions'), where("userId", "==", userId));
     const unsubscribeTransactions = onSnapshot(qTransactions, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
       setTransactions(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }, handleSnapshotError);
 
-    // Stocks
     const qStocks = query(collection(db, 'stocks'), where("userId", "==", userId));
     const unsubscribeStocks = onSnapshot(qStocks, (snapshot) => {
       setStocks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockHolding)));

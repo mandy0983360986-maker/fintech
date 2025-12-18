@@ -2,13 +2,13 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 
-// Helper to safely get env var (Vite uses import.meta.env, but instructions require process.env)
-const getEnv = (key: string) => {
-  try {
-    return typeof process !== 'undefined' && process.env ? process.env[key] : undefined;
-  } catch {
-    return undefined;
-  }
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID
 };
 
 let app: FirebaseApp | undefined;
@@ -16,54 +16,28 @@ let auth: Auth | undefined;
 let db: Firestore | undefined;
 let initializationError: Error | null = null;
 
-const getFirebaseConfig = () => {
-  // Priority 1: GitHub Secrets / Process Environment Variables
-  const envConfig = {
-    apiKey: getEnv('FIREBASE_API_KEY'),
-    authDomain: getEnv('FIREBASE_AUTH_DOMAIN'),
-    projectId: getEnv('FIREBASE_PROJECT_ID'),
-    storageBucket: getEnv('FIREBASE_STORAGE_BUCKET'),
-    messagingSenderId: getEnv('FIREBASE_MESSAGING_SENDER_ID'),
-    appId: getEnv('FIREBASE_APP_ID')
-  };
-
-  if (envConfig.apiKey && envConfig.projectId) {
-    console.debug("Firebase using Environment Variables.");
-    return envConfig;
-  }
-
-  // Priority 2: Local Storage (Fallback for setup/debugging)
-  try {
-    const localConfig = localStorage.getItem('firebase_config');
-    if (localConfig) {
-      console.debug("Firebase using Local Storage Config.");
-      return JSON.parse(localConfig);
-    }
-  } catch (e) {
-    console.warn("Local config parse failed", e);
-  }
-
-  return null;
-};
-
 try {
-  const config = getFirebaseConfig();
-
-  if (!config || !config.apiKey) {
-    throw new Error("Firebase 配置缺失。請在 GitHub Secrets 設定環境變數，或於登入頁面手動配置。");
+  // 嚴格檢查 API Key 是否存在，避免執行時崩潰
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === '') {
+    throw new Error("Missing Firebase API Key. Please configure GitHub Secrets.");
   }
 
   if (getApps().length === 0) {
-    app = initializeApp(config);
+    app = initializeApp(firebaseConfig);
   } else {
     app = getApps()[0];
   }
   
   auth = getAuth(app);
   db = getFirestore(app);
+  console.log("Firebase initialized in cloud mode.");
 } catch (error: any) {
   initializationError = error instanceof Error ? error : new Error(String(error));
-  console.error("Firebase Init Error:", initializationError.message);
+  console.warn("Firebase running in offline/demo mode:", initializationError.message);
+  
+  // 保持為 undefined，UI 層會據此判斷是否顯示警報
+  auth = undefined;
+  db = undefined;
 }
 
 export { auth, db, initializationError };
