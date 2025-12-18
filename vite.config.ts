@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: './', // 確保在 GitHub Pages 子路徑下能正確加載資源
+  base: './', // 關鍵：確保 GitHub Pages 資源路徑正確
   define: {
-    // 透過 define 在編譯時靜態替換環境變數
+    // 透過 define 在建置時注入環境變數
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
     'process.env.FIREBASE_API_KEY': JSON.stringify(process.env.FIREBASE_API_KEY || ''),
     'process.env.FIREBASE_AUTH_DOMAIN': JSON.stringify(process.env.FIREBASE_AUTH_DOMAIN || ''),
@@ -20,7 +20,7 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // 正式環境移除 console
+        drop_console: true, // 正式環境移除 console.log
         drop_debugger: true,
       },
     },
@@ -29,9 +29,5 @@ export default defineConfig({
         main: 'index.html'
       }
     }
-  },
-  server: {
-    port: 3000,
-    open: true
   }
 });
