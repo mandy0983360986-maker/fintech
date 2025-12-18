@@ -3,7 +3,7 @@ name: Build and Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - main  # 當代碼推送到 main 分支時觸發
 
 permissions:
   contents: write
@@ -21,15 +21,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # 已移除 cache: 'npm' 以避免缺少 lock file 的報錯
 
       - name: Install Dependencies
         run: npm install
 
-      - name: Build
+      - name: Build Application
         run: npm run build
         env:
-          CI: false
+          # 從 GitHub Secrets 注入環境變數到編譯程序
           API_KEY: ${{ secrets.API_KEY }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
           FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
